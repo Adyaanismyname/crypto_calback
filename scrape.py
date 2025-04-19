@@ -409,7 +409,7 @@ def handle_callback():
     try:
         data = request.get_json(force=True, silent=True)
         pool_address , mint_address = extract_addresses(data)
-        scrape.main(pool_address , mint_address)
+        main(pool_address , mint_address)
         
     except Exception as e:
         print("JSON parsing failed:", str(e))
