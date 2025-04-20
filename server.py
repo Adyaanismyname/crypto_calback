@@ -1,7 +1,10 @@
 from flask import Flask, request, jsonify
 import scrape
+
 app = Flask(__name__)
 
+# Global storage for received tokens
+stored_tokens = []
 
 def extract_addresses(data):
     """
@@ -63,18 +66,45 @@ def handle_callback():
     print("Method:", request.method)
     print("Headers:", dict(request.headers))
     print("Raw Body:", request.data)
-
     try:
         data = request.get_json(force=True, silent=True)
-        pool_address , mint_address = extract_addresses(data)
+        pool_address, mint_address = extract_addresses(data)
+        
+        # Store the new token info if valid
+        if pool_address and mint_address:
+            timestamp = data.get('timestamp', '')
+            token_info = {
+                'timestamp': timestamp,
+                'pool_address': pool_address,
+                'mint_address': mint_address
+            }
+            stored_tokens.append(token_info)
+            print(f"New token stored: {token_info}")
         
     except Exception as e:
         print("JSON parsing failed:", str(e))
         data = None
-
+    
     return jsonify({'status': 'received'}), 200
+
+@app.route('/get_crypto_tokens', methods=['GET'])
+def get_crypto_tokens():
+    """Return the list of newly received tokens from callbacks"""
+    # Get optional limit parameter (how many tokens to return)
+    try:
+        limit = int(request.args.get('limit', len(stored_tokens)))
+    except ValueError:
+        limit = len(stored_tokens)
+    
+    # Return the most recent tokens up to the limit
+    recent_tokens = stored_tokens[-limit:] if limit > 0 else []
+    
+    return jsonify({
+        'status': 'success',
+        'count': len(recent_tokens),
+        'tokens': recent_tokens
+    })
 
 if __name__ == '__main__':
     # app.run(host='0.0.0.0', port=5000, debug=True)
     app.run(debug=True)
-    pass
