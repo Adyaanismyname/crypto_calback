@@ -78,8 +78,11 @@ def handle_callback():
                 'pool_address': pool_address,
                 'mint_address': mint_address
             }
+            
+            # Add to the tokens list
             stored_tokens.append(token_info)
             print(f"New token stored: {token_info}")
+            print(f"Total tokens waiting to be fetched: {len(stored_tokens)}")
         
     except Exception as e:
         print("JSON parsing failed:", str(e))
@@ -89,20 +92,23 @@ def handle_callback():
 
 @app.route('/get_crypto_tokens', methods=['GET'])
 def get_crypto_tokens():
-    """Return the list of newly received tokens from callbacks"""
-    # Get optional limit parameter (how many tokens to return)
-    try:
-        limit = int(request.args.get('limit', len(stored_tokens)))
-    except ValueError:
-        limit = len(stored_tokens)
+    """Return all newly received tokens and clear the storage"""
+    global stored_tokens
     
-    # Return the most recent tokens up to the limit
-    recent_tokens = stored_tokens[-limit:] if limit > 0 else []
+    # Get current tokens
+    current_tokens = stored_tokens.copy()
+    token_count = len(current_tokens)
     
+    # Clear the tokens list for new ones
+    stored_tokens = []
+    
+    print(f"Sent {token_count} tokens to client. Storage cleared.")
+    
+    # Return all tokens that were in storage
     return jsonify({
         'status': 'success',
-        'count': len(recent_tokens),
-        'tokens': recent_tokens
+        'count': token_count,
+        'tokens': current_tokens
     })
 
 if __name__ == '__main__':
