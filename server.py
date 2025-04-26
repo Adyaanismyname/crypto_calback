@@ -43,6 +43,8 @@ def extract_addresses(data):
                 # Extract token_mint_two
                 if 'token_mint_two' in info:
                     token_mint_two = info['token_mint_two']
+                    if token_mint_two == "So11111111111111111111111111111111111111112":
+                        token_mint_two = info['token_mint_one']
                 
                 # Once we find the CREATE_POOL action, we can break out of the loop
                 break
