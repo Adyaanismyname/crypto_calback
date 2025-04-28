@@ -91,6 +91,17 @@ def handle_callback():
         data = None
     
     return jsonify({'status': 'received'}), 200
+from datetime import datetime
+
+# Function to convert ISO 8601 timestamp string to Unix timestamp
+def convert_to_unix_timestamp(timestamp_str):
+    try:
+        # Remove the 'Z' at the end (indicating UTC) and convert to datetime
+        timestamp_obj = datetime.strptime(timestamp_str, '%Y-%m-%dT%H:%M:%S.%fZ')
+        return timestamp_obj.timestamp()  # Convert to Unix timestamp
+    except ValueError as e:
+        print(f"Error converting timestamp: {e}")
+        return 0  # Default return if conversion fails
 
 @app.route('/get_crypto_tokens', methods=['GET'])
 def get_crypto_tokens():
@@ -100,9 +111,14 @@ def get_crypto_tokens():
     # Get current tokens
     current_tokens = stored_tokens.copy()
 
-    current_time = time.time()
-    # Filter out tokens older than 5 minutes
-    current_tokens = [token for token in current_tokens if (current_time - token['timestamp']) <= 20]
+    current_time = time.time()  # Get current Unix timestamp
+
+    # Filter out tokens older than 20 seconds
+    current_tokens = [
+        token for token in current_tokens
+        if (current_time - convert_to_unix_timestamp(token['timestamp'])) <= 20
+    ]
+
     token_count = len(current_tokens)
 
     # Clear the tokens list for new ones
