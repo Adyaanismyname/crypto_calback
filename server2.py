@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import scrape
-
+import time
 app = Flask(__name__)
 
 # Global storage for received tokens
@@ -99,8 +99,12 @@ def get_crypto_tokens():
     
     # Get current tokens
     current_tokens = stored_tokens.copy()
+
+    current_time = time.time()
+    # Filter out tokens older than 5 minutes
+    current_tokens = [token for token in current_tokens if (current_time - token['timestamp']) <= 20]
     token_count = len(current_tokens)
-    
+
     # Clear the tokens list for new ones
     stored_tokens = []
     
