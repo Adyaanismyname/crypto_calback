@@ -111,6 +111,8 @@ def get_crypto_tokens():
     # Get current tokens
     current_tokens = stored_tokens.copy()
 
+    print("Current Tokens" , len(current_tokens))
+
     current_time = time.time()  # Get current Unix timestamp
 
     # Filter out tokens older than 20 seconds
@@ -118,6 +120,8 @@ def get_crypto_tokens():
         token for token in current_tokens
         if (current_time - convert_to_unix_timestamp(token['timestamp'])) <= 20
     ]
+
+    print("Current Tokens after filtering" , len(current_tokens))
 
     token_count = len(current_tokens)
 
