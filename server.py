@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 import scrape
 import time
+from datetime import datetime
+
 app = Flask(__name__)
 
 # Global storage for received tokens
@@ -74,11 +76,13 @@ def handle_callback():
         
         # Store the new token info if valid
         if pool_address and mint_address:
-            timestamp = data.get('timestamp', '')
+            # Use current timestamp instead of relying on the data
+            current_time = time.time()
             token_info = {
-                'timestamp': timestamp,
+                'timestamp': current_time,  # Store as Unix timestamp directly
                 'pool_address': pool_address,
-                'mint_address': mint_address
+                'mint_address': mint_address,
+                'received_at': datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')  # For human-readable reference
             }
             
             # Add to the tokens list
@@ -91,17 +95,6 @@ def handle_callback():
         data = None
     
     return jsonify({'status': 'received'}), 200
-from datetime import datetime
-
-# Function to convert ISO 8601 timestamp string to Unix timestamp
-def convert_to_unix_timestamp(timestamp_str):
-    try:
-        # Remove the 'Z' at the end (indicating UTC) and convert to datetime
-        timestamp_obj = datetime.strptime(timestamp_str, '%Y-%m-%dT%H:%M:%S.%fZ')
-        return timestamp_obj.timestamp()  # Convert to Unix timestamp
-    except ValueError as e:
-        print(f"Error converting timestamp: {e}")
-        return 0  # Default return if conversion fails
 
 @app.route('/get_crypto_tokens', methods=['GET'])
 def get_crypto_tokens():
@@ -109,32 +102,36 @@ def get_crypto_tokens():
     global stored_tokens
     
     # Get current tokens
-    current_tokens = stored_tokens.copy()
-
-    print("Current Tokens" , len(current_tokens))
+    all_tokens = stored_tokens.copy()
+    print(f"Total tokens in storage: {len(all_tokens)}")
 
     current_time = time.time()  # Get current Unix timestamp
+    print(f"Current time: {current_time}")
 
     # Filter out tokens older than 20 seconds
-    current_tokens = [
-        token for token in current_tokens
-        if (current_time - convert_to_unix_timestamp(token['timestamp'])) <= 20
-    ]
+    recent_tokens = []
+    for token in all_tokens:
+        token_time = token['timestamp']  # Now directly stored as Unix timestamp
+        age = current_time - token_time
+        print(f"Token timestamp: {token_time}, age: {age} seconds")
+        
+        if age <= 20:
+            recent_tokens.append(token)
+        else:
+            print(f"Filtering out token older than 20 seconds: {token}")
 
-    print("Current Tokens after filtering" , len(current_tokens))
-
-    token_count = len(current_tokens)
+    token_count = len(recent_tokens)
+    print(f"Returning {token_count} tokens that are less than 20 seconds old")
 
     # Clear the tokens list for new ones
     stored_tokens = []
-    
-    print(f"Sent {token_count} tokens to client. Storage cleared.")
+    print("Storage cleared.")
     
     # Return all tokens that were in storage
     return jsonify({
         'status': 'success',
         'count': token_count,
-        'tokens': current_tokens
+        'tokens': recent_tokens
     })
 
 if __name__ == '__main__':
